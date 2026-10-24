@@ -1,1 +1,86 @@
-ABC
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Supabase Learning Lab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f4f7f6;
+      color: #24332e;
+    }
+    h1 { color: #247a55; }
+    .course {
+      background: white;
+      padding: 16px;
+      margin: 12px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px #0000000d;
+    }
+    #status { color: #53665d; }
+  </style>
+</head>
+<body>
+  <h1>My Supabase Learning Lab</h1>
+  <p>Courses loaded from my Supabase database.</p>
+
+  <p id="status">Loading courses...</p>
+  <div id="courses"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://ltvsyzuhdlkwrtdqlcif.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_IZDrJTf3cCsA_YW3j4LzIA_qysEmcEH";
+
+    const db = supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    async function loadCourses() {
+      const status = document.getElementById("status");
+      const container = document.getElementById("courses");
+
+      try {
+        const { data, error } = await db
+          .from("courses")
+          .select("id, title, description")
+          .order("id");
+
+        if (error) throw error;
+
+        container.replaceChildren();
+
+        data.forEach(course => {
+          const card = document.createElement("section");
+          card.className = "course";
+
+          const title = document.createElement("h2");
+          title.textContent = course.title;
+
+          const description = document.createElement("p");
+          description.textContent = course.description || "";
+
+          card.append(title, description);
+          container.appendChild(card);
+        });
+
+        status.textContent =
+          `Successfully loaded ${data.length} courses.`;
+
+      } catch (error) {
+        console.error("Supabase error:", error);
+        status.textContent =
+          "Unable to load courses. Check the browser console.";
+      }
+    }
+
+    loadCourses();
+  </script>
+</body>
+</html>
