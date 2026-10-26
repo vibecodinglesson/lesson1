@@ -1,0 +1,83 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Supabase Courses</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 750px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f4f7fb;
+    }
+    .course {
+      background: white;
+      padding: 16px;
+      margin: 12px 0;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>My Supabase Courses</h1>
+  <p>These courses come from my own database.</p>
+  <p id="status">Loading courses...</p>
+  <div id="courses"></div>
+
+  <script>
+    const SUPABASE_URL = "https://ltvsyzuhdlkwrtdqlcif.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_IZDrJTf3cCsA_YW3j4LzIA_qysEmcEH";
+
+    async function loadCourses() {
+      const status = document.getElementById("status");
+      const container = document.getElementById("courses");
+
+      try {
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/courses?select=id,title,description&order=id.asc`,
+          {
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`
+            }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Request failed: ${response.status}`);
+        }
+
+        const courses = await response.json();
+        container.replaceChildren();
+
+        courses.forEach(course => {
+          const card = document.createElement("section");
+          card.className = "course";
+
+          const title = document.createElement("h2");
+          title.textContent = course.title;
+
+          const description = document.createElement("p");
+          description.textContent = course.description || "";
+
+          card.append(title, description);
+          container.appendChild(card);
+        });
+
+        status.textContent =
+          `Successfully loaded ${courses.length} courses from Supabase.`;
+
+      } catch (error) {
+        console.error(error);
+        status.textContent =
+          "Could not load courses. Check the browser console.";
+      }
+    }
+
+    loadCourses();
+  </script>
+</body>
+</html>
