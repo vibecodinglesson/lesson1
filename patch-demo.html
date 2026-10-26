@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PATCH Practice - Supabase</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 650px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f4f7fb;
+    }
+    input, textarea, select, button {
+      box-sizing: border-box;
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .course {
+      background: white;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Update a Course with PATCH</h1>
+
+  <h2>Admin login</h2>
+  <input id="email" type="email" placeholder="Admin email">
+  <input id="password" type="password" placeholder="Admin password">
+  <button id="loginButton">Sign in</button>
+  <button id="logoutButton">Sign out</button>
+
+  <hr>
+
+  <h2>Edit course</h2>
+  <button id="loadButton">Load Courses</button>
+
+  <select id="courseSelect">
+    <option value="">Select a course</option>
+  </select>
+
+  <input id="title" placeholder="New course title">
+  <textarea id="description" placeholder="New course description"></textarea>
+  <button id="updateButton">Save Changes</button>
+
+  <p id="status">Please sign in as your authorized admin.</p>
+
+  <script>
+    const SUPABASE_URL = "https://ltvsyzuhdlkwrtdqlcif.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_IZDrJTf3cCsA_YW3j4LzIA_qysEmcEH";
+
+    let accessToken = null;
+
+    const status = document.getElementById("status");
+    const select = document.getElementById("courseSelect");
+    const titleInput = document.getElementById("title");
+    const descriptionInput = document.getElementById("description");
+
+    async function request(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          ...options.headers
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Request failed.");
+      }
+
+      if (response.status === 204) return null;
+      return response.json();
+    }
+
+    document.getElementById("loginButton").onclick = async () => {
+      try {
+        status.textContent = "Signing in...";
+
+        const response = await fetch(
+          `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+          {
+            method: "POST",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              email: document.getElementById("email").value,
+              password: document.getElementById("password").value
+            })
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.msg || data.message || "Login failed.");
+        }
+
+        accessToken = data.access_token;
+        status.textContent = "Signed in. Load your courses.";
+
+      } catch (error) {
+        status.textContent = "Error: " + error.message;
+      }
+    };
+
+    document.getElementById("loadButton").onclick = async () => {
+      if (!accessToken) {
+        status.textContent = "Please sign in first.";
+        return;
+      }
+
+      try {
+        const courses = await request(
+          `${SUPABASE_URL}/rest/v1/courses?select=id,title,description&order=id.asc`
+        );
+
+        select.replaceChildren(new Option("Select a course", ""));
+
+        courses.forEach(course => {
+          const option = new Option(course.title, course.id);
+          option.dataset.title = course.title;
+          option.dataset.description = course.description || "";
+          select.add(option);
+        });
+
+        status.textContent = `Loaded ${courses.length} courses.`;
+
+      } catch (error) {
+        status.textContent = "Error: " + error.message;
+      }
+    };
+
+    select.onchange = () => {
+      const option = select.selectedOptions[0];
+
+      titleInput.value = option?.dataset.title || "";
+      descriptionInput.value = option?.dataset.description || "";
+    };
+
+    document.getElementById("updateButton").onclick = async () => {
+      if (!accessToken) {
+        status.textContent = "Please sign in first.";
+        return;
+      }
+
+      if (!select.value) {
+        status.textContent = "Please select a course.";
+        return;
+      }
+
+      const title = titleInput.value.trim();
+
+      if (!title) {
+        status.textContent = "Course title cannot be empty.";
+        return;
+      }
+
+      try {
+        status.textContent = "Updating course...";
+
+        const updated = await request(
+          `${SUPABASE_URL}/rest/v1/courses?id=eq.${encodeURIComponent(select.value)}`,
+          {
+            method: "PATCH",
+            headers: { "Prefer": "return=representation" },
+            body: JSON.stringify({
+              title: title,
+              description: descriptionInput.value.trim() || null
+            })
+          }
+        );
+
+        if (!updated || updated.length === 0) {
+          throw new Error("No course updated. Check your UPDATE policy.");
+        }
+
+        status.textContent = `Updated successfully: ${updated[0].title}`;
+        document.getElementById("loadButton").click();
+
+      } catch (error) {
+        status.textContent = "Error: " + error.message;
+      }
+    };
+
+    document.getElementById("logoutButton").onclick = () => {
+      accessToken = null;
+      status.textContent = "Signed out. Sign in again to continue.";
+    };
+  </script>
+</body>
+</html>
