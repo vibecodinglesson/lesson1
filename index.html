@@ -81,6 +81,26 @@
     }
 
     loadCourses();
+
+    
+async function testBackend() {
+  try {
+    const response = await fetch("/api/hello");
+
+    if (!response.ok) {
+      throw new Error("Backend request failed");
+    }
+
+    const data = await response.json();
+    console.log(data.message);
+
+  } catch (error) {
+    console.error("Error:", error.message);
+  }
+}
+
+testBackend();
+
   </script>
 </body>
 </html>
