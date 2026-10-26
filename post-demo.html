@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>POST Practice - Supabase</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f4f7fb;
+    }
+    input, textarea, button {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    button { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Add a Course with POST</h1>
+
+  <form id="courseForm">
+    <h2>Admin login</h2>
+    <input id="email" type="email"
+      placeholder="Admin email" required>
+    <input id="password" type="password"
+      placeholder="Admin password" required>
+
+    <h2>New course</h2>
+    <input id="title" type="text"
+      placeholder="Course title" required>
+    <textarea id="description"
+      placeholder="Course description"></textarea>
+
+    <button type="submit">Sign in and Add Course</button>
+  </form>
+
+  <p id="status">Ready to practise.</p>
+
+  <script>
+    const SUPABASE_URL = "https://ltvsyzuhdlkwrtdqlcif.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_IZDrJTf3cCsA_YW3j4LzIA_qysEmcEH";
+
+    const form = document.getElementById("courseForm");
+    const status = document.getElementById("status");
+
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const title = document.getElementById("title").value.trim();
+      const description =
+        document.getElementById("description").value.trim();
+
+      if (!title) {
+        status.textContent = "Please enter a course title.";
+        return;
+      }
+
+      const button = form.querySelector("button");
+      button.disabled = true;
+      status.textContent = "Signing in...";
+
+      try {
+        // 1. Sign in and receive an access token.
+        const loginResponse = await fetch(
+          `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+          {
+            method: "POST",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, password })
+          }
+        );
+
+        const loginData = await loginResponse.json();
+
+        if (!loginResponse.ok) {
+          throw new Error(loginData.msg ||
+            loginData.message || "Login failed.");
+        }
+
+        status.textContent = "Signed in. Adding course...";
+
+        // 2. Send the new course to the database.
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/courses`,
+          {
+            method: "POST",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${loginData.access_token}`,
+              "Content-Type": "application/json",
+              "Prefer": "return=representation"
+            },
+            body: JSON.stringify({
+              title: title,
+              description: description || null
+            })
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.message || result.hint ||
+            "Course insertion failed."
+          );
+        }
+
+        status.textContent =
+          `Success! Added: ${result[0].title}`;
+
+        form.reset();
+
+      } catch (error) {
+        console.error(error);
+        status.textContent = "Error: " + error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
