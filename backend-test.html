@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backend Data Test</title>
+</head>
+<body>
+  <h1>Send Data to My Backend</h1>
+
+  <input id="name" type="text" placeholder="Enter your name">
+  <button id="sendButton">Send to Backend</button>
+
+  <p id="result"></p>
+
+  <script>
+    document.getElementById("sendButton").addEventListener("click", async () => {
+      const name = document.getElementById("name").value.trim();
+      const result = document.getElementById("result");
+
+      if (!name) {
+        result.textContent = "Please enter your name.";
+        return;
+      }
+
+      result.textContent = "Sending data...";
+
+      try {
+        const response = await fetch("/api/greet", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ name: name })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Request failed");
+        }
+
+        result.textContent = data.message;
+      } catch (error) {
+        result.textContent = "Error: " + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
