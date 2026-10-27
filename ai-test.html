@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My First AI App</title>
+</head>
+<body>
+  <h1>My First AI App</h1>
+  <p>Ask Gemini a question:</p>
+
+  <textarea id="question" rows="4" cols="40"
+    placeholder="What is artificial intelligence?"></textarea>
+
+  <br><br>
+  <button id="askButton">Ask AI</button>
+
+  <h2>AI Answer</h2>
+  <p id="answer">Your answer will appear here.</p>
+
+  <script>
+    document.getElementById("askButton").addEventListener("click", async () => {
+      const question = document.getElementById("question").value.trim();
+      const answer = document.getElementById("answer");
+      const button = document.getElementById("askButton");
+
+      if (!question) {
+        answer.textContent = "Please enter a question.";
+        return;
+      }
+
+      button.disabled = true;
+      answer.textContent = "Asking Gemini...";
+
+      try {
+        const response = await fetch("/api/ask-ai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ question })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Request failed");
+        }
+
+        answer.textContent = data.answer;
+      } catch (error) {
+        answer.textContent = "Error: " + error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
