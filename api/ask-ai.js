@@ -18,13 +18,13 @@ export default async function handler(request, response) {
 
   if (!apiKey) {
     return response.status(500).json({
-      error: "Gemini API key is not configured"
+      error: "GEMINI_API_KEY is missing in Vercel"
     });
   }
 
   try {
     const aiResponse = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
       {
         method: "POST",
         headers: {
@@ -45,8 +45,10 @@ export default async function handler(request, response) {
 
     if (!aiResponse.ok) {
       console.error("Gemini API error:", aiResponse.status, data);
+
       return response.status(502).json({
-        error: "The AI service could not answer. Check model access and API limits."
+        error: "Gemini API returned HTTP " + aiResponse.status,
+        details: data.error?.message || "No details returned"
       });
     }
 
@@ -56,12 +58,12 @@ export default async function handler(request, response) {
         .join("") || "No answer was returned.";
 
     return response.status(200).json({ answer });
-  } catch (error) {
-    console.error("Gemini API error:", aiResponse.status, data);
 
-return response.status(502).json({
-  error: "Gemini API returned HTTP " + aiResponse.status,
-  details: data.error?.message || "No details returned"
-});
+  } catch (error) {
+    console.error("Backend error:", error.message);
+
+    return response.status(500).json({
+      error: "Backend request failed. Check Vercel function logs."
+    });
   }
 }
