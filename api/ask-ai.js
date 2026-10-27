@@ -57,9 +57,11 @@ export default async function handler(request, response) {
 
     return response.status(200).json({ answer });
   } catch (error) {
-    console.error("Backend error:", error.message);
-    return response.status(500).json({
-      error: "Something went wrong while contacting the AI service."
-    });
+    console.error("Gemini API error:", aiResponse.status, data);
+
+return response.status(502).json({
+  error: "Gemini API returned HTTP " + aiResponse.status,
+  details: data.error?.message || "No details returned"
+});
   }
 }
