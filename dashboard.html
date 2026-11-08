@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Dashboard</title>
+</head>
+<body>
+
+  <h1>My Dashboard</h1>
+
+  <p id="welcome">Checking login...</p>
+
+  <p id="email"></p>
+
+  <button id="logoutBtn">Logout</button>
+
+  <script type="module">
+    import { supabase } from "./js/supabase.js";
+
+    const welcome = document.getElementById("welcome");
+    const emailElement = document.getElementById("email");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    // Check whether a user is logged in
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error || !data.user) {
+
+      // No logged-in user: go to login page
+      window.location.href = "./login.html";
+
+    } else {
+
+      // Display logged-in user's information
+      const user = data.user;
+
+      welcome.textContent =
+        "Welcome, " +
+        (user.user_metadata.full_name || "Student");
+
+      emailElement.textContent = "Email: " + user.email;
+    }
+
+    // Logout
+    logoutBtn.addEventListener("click", async () => {
+
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        alert("Logout error: " + error.message);
+        return;
+      }
+
+      window.location.href = "./login.html";
+    });
+
+  </script>
+
+</body>
+</html>
