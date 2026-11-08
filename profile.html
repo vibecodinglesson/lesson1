@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Profile</title>
+</head>
+<body>
+
+  <h1>My Profile</h1>
+
+  <form id="profileForm">
+
+    <label>Full Name</label><br>
+    <input type="text" id="fullName" required>
+
+    <br><br>
+
+    <label>Phone Number</label><br>
+    <input type="text" id="phone">
+
+    <br><br>
+
+    <label>City</label><br>
+    <input type="text" id="city">
+
+    <br><br>
+
+    <button type="submit">Save Profile</button>
+
+  </form>
+
+  <p id="message"></p>
+
+  <script type="module">
+    import { supabase } from "./js/supabase.js";
+
+    const form = document.getElementById("profileForm");
+    const message = document.getElementById("message");
+
+    // Check logged-in user
+    const { data: userData, error: userError } =
+      await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      window.location.href = "./login.html";
+    } else {
+
+      const user = userData.user;
+
+      // Load user's profile
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        message.textContent = "Profile error: " + error.message;
+      } else {
+        document.getElementById("fullName").value =
+          profile.full_name || "";
+
+        document.getElementById("phone").value =
+          profile.phone || "";
+
+        document.getElementById("city").value =
+          profile.city || "";
+      }
+    }
+
+    // Save profile changes
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const { data: userData } =
+        await supabase.auth.getUser();
+
+      if (!userData.user) {
+        window.location.href = "./login.html";
+        return;
+      }
+
+      const user = userData.user;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: document.getElementById("fullName").value.trim(),
+          phone: document.getElementById("phone").value.trim(),
+          city: document.getElementById("city").value.trim()
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        message.textContent = "Update error: " + error.message;
+      } else {
+        message.textContent = "Profile updated successfully!";
+      }
+    });
+
+  </script>
+
+</body>
+</html>
